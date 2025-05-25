@@ -33,9 +33,18 @@ private:
 	TObjectPtr<UInputMappingContext> AuraContext;
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputAction> MoveAction;
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> MRBAction;
+	UPROPERTY(EditAnywhere, Category = "Input")
+	float CameraRotationMultiplier = 100;
 
 	TScriptInterface<IEnemyInterface> PreviousTarget;
 	TScriptInterface<IEnemyInterface> CurrentTarget;
+	FVector2D ViewportSize;
+	bool IsDragCamera;
 	void TraceCursor();
+	void DragCamera(float DeltaTime);
 	void Move(const FInputActionValue& inputActionValue);
+	void MRB_Started(const FInputActionValue& inputActionValue);
+	void MRB_Completed(const FInputActionValue& inputActionValue);
 };

@@ -5,11 +5,14 @@
 #include "EnhancedInputSubsystems.h"
 #include <EnhancedInputComponent.h>
 #include "InputActionValue.h"
+#include "Aura/Aura.h"
+#include "Interfactions/CameraControllableInterface.h"
 #include "Interfactions/EnemyInterface.h"
 
 AAuraPlayerController::AAuraPlayerController()
 {
 	bReplicates = true; //for multiplayer usage
+	IsDragCamera = false;
 }
 
 void AAuraPlayerController::BeginPlay()
@@ -30,6 +33,11 @@ void AAuraPlayerController::BeginPlay()
 	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	InputModeData.SetHideCursorDuringCapture(false);
 	SetInputMode(InputModeData);
+
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+	}
 }
 
 void AAuraPlayerController::SetupInputComponent()
@@ -37,6 +45,9 @@ void AAuraPlayerController::SetupInputComponent()
 	Super::SetupInputComponent();
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAuraPlayerController::Move);
+	EnhancedInputComponent->BindAction(MRBAction, ETriggerEvent::Started, this, &AAuraPlayerController::MRB_Started);
+	EnhancedInputComponent->BindAction(MRBAction, ETriggerEvent::Completed, this,
+	                                   &AAuraPlayerController::MRB_Completed);
 }
 
 void AAuraPlayerController::TraceCursor()
@@ -67,6 +78,7 @@ void AAuraPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 	TraceCursor();
+	DragCamera(DeltaTime);
 }
 
 void AAuraPlayerController::Move(const FInputActionValue& inputActionValue)
@@ -87,4 +99,48 @@ void AAuraPlayerController::Move(const FInputActionValue& inputActionValue)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No pawn controlled"));
 	}
+}
+
+void AAuraPlayerController::DragCamera(float DeltaTime)
+{
+	if (!IsDragCamera) return;
+	if (ICameraControllableInterface* CameraControllable = GetPawn<ICameraControllableInterface>())
+	{
+		float MouseDeltaX;
+		float MouseDeltaY;
+		GetInputMouseDelta(MouseDeltaX, MouseDeltaY);
+
+		const float YawDelta = MouseDeltaX * CameraRotationMultiplier / ViewportSize.X;
+		const float PitchDelta = MouseDeltaY * CameraRotationMultiplier / ViewportSize.Y;
+		//UE_LOG(LogTemp, Log, TEXT("DragCamera::Delta: %f, %f"), YawDelta, PitchDelta);
+		CameraControllable->YawCamera(YawDelta);
+		CameraControllable->PitchCamera(PitchDelta);
+		FRotator Rotation = GetControlRotation();
+		Rotation.Yaw += YawDelta;
+		Rotation.Pitch += PitchDelta;
+		SetControlRotation(Rotation);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No pawn CameraControllable"));
+	}
+}
+
+void AAuraPlayerController::MRB_Started(const FInputActionValue& inputActionValue)
+{
+	IsDragCamera = true;
+	//base point: LeftTop
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+	}
+}
+
+void AAuraPlayerController::MRB_Completed(const FInputActionValue& inputActionValue)
+{
+	IsDragCamera = false;
+	/*float mouseX;
+	float mouseY;
+	GetMousePosition(mouseX, mouseY);
+	UE_LOG(LogTemp, Log, TEXT("MRB_Completed::Mouse Location: %f, %f"), mouseX, mouseY);*/
 }

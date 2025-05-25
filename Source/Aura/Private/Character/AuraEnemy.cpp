@@ -3,6 +3,9 @@
 
 #include "Character/AuraEnemy.h"
 
+#include "AbilitySystem/AuraAbilitySystemComponent.h"
+#include "AbilitySystem/AuraAttributeSet.h"
+
 void AAuraEnemy::HightlightActor()
 {
 	HightlightMesh(GetMesh());
@@ -24,6 +27,18 @@ AAuraEnemy::AAuraEnemy()
 	auto* mesh = GetMesh();
 	check(mesh);
 	mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+	AbilitySystemComponent = CreateDefaultSubobject<UAuraAbilitySystemComponent>("AbilitySystemComponent");
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+	AttributeSet = CreateDefaultSubobject<UAuraAttributeSet>("AttributeSet");
+}
+
+void AAuraEnemy::BeginPlay()
+{
+	Super::BeginPlay();
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	UE_LOG(LogTemp, Log, TEXT("AAuraEnemy::InitAbilityActorInfo called on BeginPlay"));
 }
 
 void AAuraEnemy::HightlightMesh(UPrimitiveComponent* mesh)
