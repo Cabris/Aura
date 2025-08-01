@@ -13,6 +13,7 @@ AAuraPlayerController::AAuraPlayerController()
 {
 	bReplicates = true; //for multiplayer usage
 	IsDragCamera = false;
+	ViewportSize = FVector2D::ZeroVector;
 }
 
 void AAuraPlayerController::BeginPlay()
@@ -20,10 +21,14 @@ void AAuraPlayerController::BeginPlay()
 	Super::BeginPlay();
 	check(AuraContext); //ensure that the AuraContext is set in the editor
 
-	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(
-		GetLocalPlayer());
-	check(Subsystem);
-	Subsystem->AddMappingContext(AuraContext, 0);
+	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+	//remore proxy will not have InputSubsystem
+	//check(Subsystem);
+	//so we use if instead of check
+	if (Subsystem)
+	{
+		Subsystem->AddMappingContext(AuraContext, 0);
+	}
 
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
